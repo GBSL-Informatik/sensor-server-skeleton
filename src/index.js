@@ -31,6 +31,14 @@ const port = process.env.PORT || 4001;
 const app = express();
 
 /**
+ * @return [Array<string>] all currently active deviceIds
+ */
+function deviceIds() {
+  return Object.keys(motionData);
+}
+
+
+/**
  * CREATE A SERVER OBJECT
  */
 const server = http.createServer(app);
@@ -72,35 +80,49 @@ io.on("connection", (socket) => {
   socket.on("new_device", data => {
     console.log("register new device: ", data)
 
-    // TODO: registriere das neue device und speichere den
-    //       namen in der Map socketId_deviceId.
-    //       Teile allen Clients mit, dass ein neues Device
-    //       vorhanden ist.
+    // TODO 1: registriere das neue device indem du:
+    //          - in der Variable 'motionData' für die deviceId eine leere Liste anlegst:
+    //              motionData[data.deviceId] = []
+    //          - in der Variable 'socketId_deviceId' für die socketId (socker.id)
+    //              die deviceId (data.deviceId) speicherst. Diese map wird benötigt, um
+    //              beim schliessen der Verbindung allen sockets, die diesem Raum angehören,
+    //              mitzuteilen, dass keine Daten mehr zu erwarten sind...
+    // TODO 2: allen Socket-Clients dieses Servers mitteilen, dass ein neues Device vorhanden ist:
+    //            Nachricht 'motion_devices', Daten: deviceIds()
   });
 
   /**
    * returns all currently active devices
    */
   socket.on("get_devices", () => {
-    socket.emit("motion_devices", Object.keys(motionData));
-  });
-
-  socket.on("display_device", data => {
-    // TODO: verlasse den alten Raum (falls vorhanden)
-    //       und schliesse dich dem Raum des neuen display_devices
-    //       an
+    socket.emit("motion_devices", deviceIds());
   });
 
   socket.on("new_motion_data", data => {
-    // TODO: Füge die Daten zur entsprechenden Liste hinzu und
-    //       teile allen clients im Raum mit, dass neue
-    //       Daten vorhanden sind.
-    //       Um Fehler zu verhindern, sollte überprüft werden,
-    //       ob die Liste auch wirklich existiert.
+    // TODO 1: Füge die Daten zur entsprechenden Liste (motionData[data.deviceId]) hinzu.
+    //         Schaue im wordcloud Beispiel nach, wie Daten einer Liste hinzugefügt werden können.
+    // TODO 2: Schicke allen Sockets, welche im Raum 'data.deviceId' sind, die neuen Daten:
+    //         Nachricht "motion_data", Daten: motionData[data.deviceId]
+    // OPTIONAL 1: Um Fehler zu verhindern, sollte überprüft werden, 
+    //             dass die Liste motionData[data.deviceId] auch wirklich existiert.
+    // OPTIONAL 2: Es sollen maximal 200 motionData Werte pro deviceId gespeichert gespeichert werden.
+    //             - Sind noch nicht 200 Werte vorhanden - neuer Wert (hinten) hinzufügen
+    //             - Sind bereits 200 Werte vorhanden: Erster Wert der Liste entfernen (https://github.com/GBSL-Informatik/knowledgebase/wiki/Whats-the-equivalent-of-XYZ-of-Python-in-JavaScript#javascript-4), 
+    //               und neuen Wert hinten anfügen.
   });
 
+  socket.on("display_device", data => {
+    // TODO 1: verlasse den alten Raum (data.oldDeviceId)
+    // TODO 2: trete dem neuen Raum (data.deviceId) bei
+    // TODO 3: schicke die aktuellen motionDatas dieses Raumes an den Socket
+    //         Nachricht: "motion_data", Daten: motionData[data.deviceId]
+  });
+
+
   socket.on("clear_motion_data", data => {
-    // TODO lösche alle aktuellen Daten des devices.
+    // TODO 1: lösche alle aktuellen Daten des devices (motionData[data.deviceId] auf leere Liste [] setzen).
+    // TODO 2: allen Sockets im Raum data.deviceId die aktuellen Daten (=leere Liste) schicken:
+    //         Nachricht: "motion_data", Daten: []
   });
 });
 
